@@ -12,7 +12,7 @@
  * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
  *
- * Copyright (c) 2001 - 2013 Object Refinery Ltd, Pentaho Corporation and Contributors..  All rights reserved.
+ * Copyright (c) 2001 - 2016 Object Refinery Ltd, Pentaho Corporation and Contributors..  All rights reserved.
  */
 
 package org.pentaho.reporting.engine.classic.core.filter.types;
@@ -22,7 +22,10 @@ import org.pentaho.reporting.engine.classic.core.ReportElement;
 import org.pentaho.reporting.engine.classic.core.filter.FormatSpecification;
 import org.pentaho.reporting.engine.classic.core.filter.RawDataSource;
 import org.pentaho.reporting.engine.classic.core.function.ExpressionRuntime;
+import org.pentaho.reporting.engine.classic.core.layout.output.AbstractReportProcessor;
 import org.pentaho.reporting.engine.classic.core.metadata.ElementMetaData;
+import org.pentaho.reporting.engine.classic.core.util.ReportDrawableRotatedComponent;
+import org.pentaho.reporting.engine.classic.core.util.RotationUtils;
 import org.pentaho.reporting.libraries.base.util.ObjectUtilities;
 import org.pentaho.reporting.libraries.formatting.FastDecimalFormat;
 
@@ -176,7 +179,13 @@ public class NumberFieldType extends AbstractElementType implements RawDataSourc
         }
       }
 
-      return context.decimalFormat.format( retval );
+      final String value =  context.decimalFormat.format( retval );
+      final float rotation = RotationUtils.getRotation( element );
+      final boolean isPdf = AbstractReportProcessor.isPdf.get() == null || AbstractReportProcessor.isPdf.get();
+
+      return rotation == RotationUtils.NO_ROTATION ? value
+        : isPdf ? new ReportDrawableRotatedComponent( value, rotation, element ) : value;
+
     } catch ( Exception e ) {
       return element.getAttribute( AttributeNames.Core.NAMESPACE, AttributeNames.Core.NULL_VALUE );
     }

@@ -12,7 +12,7 @@
  * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
  *
- * Copyright (c) 2001 - 2013 Object Refinery Ltd, Pentaho Corporation and Contributors..  All rights reserved.
+ * Copyright (c) 2001 - 2016 Object Refinery Ltd, Pentaho Corporation and Contributors..  All rights reserved.
  */
 
 package org.pentaho.reporting.engine.classic.core.filter.types;
@@ -22,6 +22,9 @@ import org.pentaho.reporting.engine.classic.core.ReportElement;
 import org.pentaho.reporting.engine.classic.core.ResourceBundleFactory;
 import org.pentaho.reporting.engine.classic.core.filter.MessageFormatSupport;
 import org.pentaho.reporting.engine.classic.core.function.ExpressionRuntime;
+import org.pentaho.reporting.engine.classic.core.layout.output.AbstractReportProcessor;
+import org.pentaho.reporting.engine.classic.core.util.ReportDrawableRotatedComponent;
+import org.pentaho.reporting.engine.classic.core.util.RotationUtils;
 import org.pentaho.reporting.libraries.base.util.ObjectUtilities;
 
 import java.util.Locale;
@@ -95,7 +98,13 @@ public class MessageType extends AbstractElementType {
     if ( value == null ) {
       return nullValue;
     }
-    return String.valueOf( value );
+
+    final String valueAsString =  String.valueOf( value );
+    final float rotation = RotationUtils.getRotation( element );
+    final boolean isPdf = AbstractReportProcessor.isPdf.get() == null || AbstractReportProcessor.isPdf.get();
+
+    return rotation == RotationUtils.NO_ROTATION ? valueAsString
+      : isPdf ? new ReportDrawableRotatedComponent( valueAsString, rotation, element ) : valueAsString;
   }
 
   public Object getDesignValue( final ExpressionRuntime runtime, final ReportElement element ) {

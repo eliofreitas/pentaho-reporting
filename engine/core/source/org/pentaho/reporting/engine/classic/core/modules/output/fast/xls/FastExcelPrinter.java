@@ -12,7 +12,7 @@
  *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *  See the GNU Lesser General Public License for more details.
  *
- *  Copyright (c) 2006 - 2013 Pentaho Corporation..  All rights reserved.
+ *  Copyright (c) 2006 - 2016 Pentaho Corporation..  All rights reserved.
  */
 
 package org.pentaho.reporting.engine.classic.core.modules.output.fast.xls;
@@ -50,11 +50,12 @@ import org.pentaho.reporting.engine.classic.core.modules.output.fast.template.Sh
 import org.pentaho.reporting.engine.classic.core.modules.output.table.base.CellBackground;
 import org.pentaho.reporting.engine.classic.core.modules.output.table.base.SheetLayout;
 import org.pentaho.reporting.engine.classic.core.modules.output.table.base.TableRectangle;
-import org.pentaho.reporting.engine.classic.core.modules.output.table.xls.helper.CellStyleProducer;
+import org.pentaho.reporting.engine.classic.core.modules.output.table.xls.helper.CellStyleProducerWithRotation;
 import org.pentaho.reporting.engine.classic.core.modules.output.table.xls.helper.ExcelPrinterBase;
 import org.pentaho.reporting.engine.classic.core.style.BandStyleKeys;
 import org.pentaho.reporting.engine.classic.core.style.ElementStyleKeys;
 import org.pentaho.reporting.engine.classic.core.style.StyleSheet;
+import org.pentaho.reporting.engine.classic.core.util.RotationUtils;
 import org.pentaho.reporting.engine.classic.core.util.geom.StrictBounds;
 import org.pentaho.reporting.engine.classic.core.util.geom.StrictGeomUtility;
 import org.pentaho.reporting.libraries.resourceloader.ResourceManager;
@@ -141,7 +142,7 @@ public class FastExcelPrinter extends ExcelPrinterBase {
     }
   }
 
-  protected CellStyleProducer createCellStyleProducer( final Workbook workbook ) {
+  protected CellStyleProducerWithRotation createCellStyleProducer( final Workbook workbook ) {
     return new FastExcelCellStyleProducer( super.createCellStyleProducer( workbook ) );
   }
 
@@ -159,7 +160,7 @@ public class FastExcelPrinter extends ExcelPrinterBase {
     Cell cellAt = getCellAt( rect.getX1(), rect.getY1() );
     CellBackground bg = tableRectangle.getBackground();
     CellStyle cellStyle =
-        getCellStyleProducer().createCellStyle( element.getObjectID(), element.getComputedStyle(), bg );
+        getCellStyleProducer().createCellStyle( element.getObjectID(), element.getComputedStyle(), bg, RotationUtils.getRotationAsString( element ) );
     if ( cellStyle != null ) {
       cellAt.setCellStyle( cellStyle );
     }

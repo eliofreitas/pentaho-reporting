@@ -12,7 +12,7 @@
  * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
  *
- * Copyright (c) 2001 - 2013 Object Refinery Ltd, Pentaho Corporation and Contributors..  All rights reserved.
+ * Copyright (c) 2001 - 2016 Object Refinery Ltd, Pentaho Corporation and Contributors..  All rights reserved.
  */
 
 package org.pentaho.reporting.engine.classic.core.layout.output;
@@ -32,6 +32,8 @@ import org.pentaho.reporting.engine.classic.core.event.ReportProgressListener;
 import org.pentaho.reporting.engine.classic.core.function.OutputFunction;
 import org.pentaho.reporting.engine.classic.core.layout.AbstractRenderer;
 import org.pentaho.reporting.engine.classic.core.layout.Renderer;
+import org.pentaho.reporting.engine.classic.core.modules.output.pageable.graphics.internal.GraphicsOutputProcessor;
+import org.pentaho.reporting.engine.classic.core.modules.output.pageable.pdf.PdfOutputProcessor;
 import org.pentaho.reporting.engine.classic.core.states.CollectingReportErrorHandler;
 import org.pentaho.reporting.engine.classic.core.states.IgnoreEverythingReportErrorHandler;
 import org.pentaho.reporting.engine.classic.core.states.LayoutProcess;
@@ -101,6 +103,8 @@ public abstract class AbstractReportProcessor implements ReportProcessor {
    * An internal flag that is only valid after the pagination has started.
    */
   private boolean pagebreaksSupported;
+
+  public static ThreadLocal<Boolean> isPdf = new ThreadLocal<Boolean>();
 
   protected AbstractReportProcessor( final MasterReport report, final OutputProcessor outputProcessor )
     throws ReportProcessingException {
@@ -413,6 +417,9 @@ public abstract class AbstractReportProcessor implements ReportProcessor {
     }
 
     PerformanceLoggingStopWatch sw = getPerformanceMonitorContext().createStopWatch( PerformanceTags.REPORT_PREPARE );
+
+    isPdf.set( this.outputProcessor instanceof PdfOutputProcessor || this.outputProcessor instanceof GraphicsOutputProcessor );
+
     try {
       sw.start();
       // every report processing starts with an StartState.

@@ -12,7 +12,7 @@
  *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *  See the GNU Lesser General Public License for more details.
  *
- *  Copyright (c) 2006 - 2013 Pentaho Corporation..  All rights reserved.
+ *  Copyright (c) 2006 - 2016 Pentaho Corporation..  All rights reserved.
  */
 
 package org.pentaho.reporting.engine.classic.core.modules.output.fast.html;
@@ -40,7 +40,10 @@ import org.pentaho.reporting.engine.classic.core.modules.output.table.html.helpe
 import org.pentaho.reporting.engine.classic.core.modules.output.table.html.helper.StyleBuilder;
 import org.pentaho.reporting.engine.classic.core.style.ElementStyleKeys;
 import org.pentaho.reporting.engine.classic.core.style.StyleSheet;
+import org.pentaho.reporting.engine.classic.core.util.IReportDrawableRotated;
 import org.pentaho.reporting.engine.classic.core.util.InstanceID;
+import org.pentaho.reporting.engine.classic.core.util.ReportDrawableRotatedComponent;
+import org.pentaho.reporting.engine.classic.core.util.RotationUtils;
 import org.pentaho.reporting.engine.classic.core.util.ShapeDrawable;
 import org.pentaho.reporting.libraries.repository.ContentIOException;
 import org.pentaho.reporting.libraries.resourceloader.factory.drawable.DrawableWrapper;
@@ -68,7 +71,8 @@ public class FastHtmlTextExtractor extends FastTextExtractor {
   }
 
   public boolean performOutput( final ReportElement content, final StyleBuilder.StyleCarrier[] cellStyle,
-      final HashMap<InstanceID, FastHtmlImageBounds> recordedBounds, final ExpressionRuntime runtime )
+                                final HashMap<InstanceID, FastHtmlImageBounds> recordedBounds,
+                                final ExpressionRuntime runtime )
     throws IOException, ContentProcessingException {
     this.recordedBounds = recordedBounds;
     styleBuilder.clear();
@@ -77,10 +81,22 @@ public class FastHtmlTextExtractor extends FastTextExtractor {
     result = false;
     processStack = new HtmlTextExtractorState( null, false, cellStyle );
     textExtractorHelper.setFirstElement( content.getObjectID(), processStack );
+    float rotation = RotationUtils.getRotation( content );
+
 
     try {
       setRuntime( runtime );
-      processInitialBox( content );
+      if ( RotationUtils.hasRotation( rotation ) ) {
+        Object objValue = content.getAttribute( AttributeNames.Core.NAMESPACE, AttributeNames.Core.VALUE );
+
+        IReportDrawableRotated rotate = new ReportDrawableRotatedComponent(
+          ( objValue != null ? objValue.toString() : null ) , rotation, content );
+        rotate.startDrawHtml( xmlWriter );
+        processInitialBox( content );
+        rotate.finishDrawHtml( xmlWriter );
+      } else {
+        processInitialBox( content );
+      }
     } finally {
       setRuntime( null );
       processStack = null;

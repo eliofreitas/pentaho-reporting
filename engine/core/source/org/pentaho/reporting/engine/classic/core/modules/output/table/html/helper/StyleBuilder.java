@@ -105,7 +105,22 @@ public interface StyleBuilder {
         "border-top-right-radius" ), BORDER_BOTTOM_LEFT_RADIUS( "border-bottom-left-radius" ), BORDER_BOTTOM_RIGHT_RADIUS(
         "border-bottom-right-radius" ),
 
-    BACKGROUND_COLOR( "background-color", true ), OVERFLOW( "overflow" ), WIDTH( "width" ), HEIGHT( "height" );
+    BACKGROUND_COLOR( "background-color", true ), OVERFLOW( "overflow" ), WIDTH( "width" ), HEIGHT( "height" ),
+
+    DISPLAY ( "display" ),
+    // IE8
+    MS_FILTER( "filter" ),
+    // Standard
+    TRANSFORM( "transform" ),
+    // FF3.5+
+    MOZ_TRANSFORM( "-moz-transform" ),
+    // IE9+
+    MS_TRANSFORM( "-ms-transform" ),
+    // Opera 10.5
+    O_TRANSFORM( "-o-transform" ),
+    // Safari 3.1+, Chrome
+    WEBKIT_TRANSFORM( "-webkit-transform" );
+
 
     private String cssName;
     private boolean inherit;

@@ -12,7 +12,7 @@
  * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
  *
- * Copyright (c) 2001 - 2013 Object Refinery Ltd, Pentaho Corporation and Contributors..  All rights reserved.
+ * Copyright (c) 2001 - 2016 Object Refinery Ltd, Pentaho Corporation and Contributors..  All rights reserved.
  */
 
 package org.pentaho.reporting.engine.classic.core.modules.output.table.xls.helper;
@@ -75,7 +75,9 @@ public class ExcelFontFactory {
             .getNearestColor( Color.black ) );
     getExcelFont( wrapper );
   }
-
+  public Workbook getWorkbook( ) {
+    return this.workbook;
+  }
   /**
    * Creates a HSSFFont. The created font is cached and reused later, if a similiar font is requested.
    *

@@ -12,7 +12,7 @@
  *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *  See the GNU Lesser General Public License for more details.
  *
- *  Copyright (c) 2006 - 2013 Pentaho Corporation..  All rights reserved.
+ *  Copyright (c) 2006 - 2016 Pentaho Corporation..  All rights reserved.
  */
 
 package org.pentaho.reporting.engine.classic.core.modules.output.table.xls.helper;
@@ -57,7 +57,7 @@ public abstract class ExcelPrinterBase {
   private ExcelColorProducer colorProducer;
   private ExcelColorProducer fontColorProducer;
   private boolean useXlsxFormat;
-  private CellStyleProducer cellStyleProducer;
+  private CellStyleProducerWithRotation cellStyleProducer;
   private ExcelImageHandler imageHandler;
   private Drawing patriarch;
 
@@ -172,7 +172,7 @@ public abstract class ExcelPrinterBase {
     return scaleFactor;
   }
 
-  public CellStyleProducer getCellStyleProducer() {
+  public CellStyleProducerWithRotation getCellStyleProducer() {
     return cellStyleProducer;
   }
 
@@ -225,7 +225,7 @@ public abstract class ExcelPrinterBase {
     cellStyleProducer = createCellStyleProducer( workbook );
   }
 
-  protected CellStyleProducer createCellStyleProducer( final Workbook workbook ) {
+  protected CellStyleProducerWithRotation createCellStyleProducer( final Workbook workbook ) {
     final boolean hardLimit =
         "true".equals( getConfig().getConfigProperty(
             "org.pentaho.reporting.engine.classic.core.modules.output.table.xls.HardStyleCountLimit" ) );

@@ -14,6 +14,14 @@
     <attribute-group-ref ref="rich-text-attributes"/>
     <attribute-group-ref ref="label"/>
 
+    <attribute namespace="http://reporting.pentaho.org/namespaces/engine/attributes/core"
+              name="rotation"
+              mandatory="false"
+              expert="true"
+              hidden="false"
+              value-type="java.lang.String"
+              value-role="Value"/>
+
     <style-group-ref ref="borders"/>
     <style-group-ref ref="common"/>
     <style-group-ref ref="text"/>
@@ -34,6 +42,14 @@
     <attribute-group-ref ref="rich-text-attributes"/>
     <attribute-group-ref ref="text-field"/>
 
+    <attribute namespace="http://reporting.pentaho.org/namespaces/engine/attributes/core"
+               name="rotation"
+               mandatory="false"
+               expert="true"
+               hidden="false"
+               value-type="java.lang.String"
+               value-role="Value"/>
+
     <style-group-ref ref="borders"/>
     <style-group-ref ref="common"/>
     <style-group-ref ref="text"/>
@@ -52,6 +68,14 @@
     <attribute-group-ref ref="message-value"/>
     <attribute-group-ref ref="rich-text-attributes"/>
     <attribute-group-ref ref="message"/>
+
+    <attribute namespace="http://reporting.pentaho.org/namespaces/engine/attributes/core"
+               name="rotation"
+               mandatory="false"
+               expert="true"
+               hidden="false"
+               value-type="java.lang.String"
+               value-role="Value"/>
 
     <style-group-ref ref="borders"/>
     <style-group-ref ref="common"/>
@@ -72,6 +96,14 @@
     <attribute-group-ref ref="wizard-aggregation"/>
     <attribute-group-ref ref="date-field"/>
 
+    <attribute namespace="http://reporting.pentaho.org/namespaces/engine/attributes/core"
+               name="rotation"
+               mandatory="false"
+               expert="true"
+               hidden="false"
+               value-type="java.lang.String"
+               value-role="Value"/>
+
     <style-group-ref ref="borders"/>
     <style-group-ref ref="common"/>
     <style-group-ref ref="text"/>
@@ -90,6 +122,14 @@
     <attribute-group-ref ref="number-field-value"/>
     <attribute-group-ref ref="wizard-aggregation"/>
     <attribute-group-ref ref="number-field"/>
+
+    <attribute namespace="http://reporting.pentaho.org/namespaces/engine/attributes/core"
+               name="rotation"
+               mandatory="false"
+               expert="true"
+               hidden="false"
+               value-type="java.lang.String"
+               value-role="Value"/>
 
     <style-group-ref ref="borders"/>
     <style-group-ref ref="common"/>

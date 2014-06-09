@@ -12,7 +12,7 @@
  * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
  *
- * Copyright (c) 2001 - 2013 Object Refinery Ltd, Pentaho Corporation and Contributors..  All rights reserved.
+ * Copyright (c) 2001 - 2016 Object Refinery Ltd, Pentaho Corporation and Contributors..  All rights reserved.
  */
 
 package org.pentaho.reporting.engine.classic.core.modules.output.table.xls.helper;
@@ -41,6 +41,7 @@ import org.pentaho.reporting.engine.classic.core.style.StyleSheet;
 import org.pentaho.reporting.engine.classic.core.style.TextStyleKeys;
 import org.pentaho.reporting.engine.classic.core.style.TextWrap;
 import org.pentaho.reporting.engine.classic.core.util.InstanceID;
+import org.pentaho.reporting.engine.classic.core.util.RotationUtils;
 import org.pentaho.reporting.engine.classic.core.util.geom.StrictGeomUtility;
 
 /**
@@ -49,7 +50,7 @@ import org.pentaho.reporting.engine.classic.core.util.geom.StrictGeomUtility;
  *
  * @author Thomas Morgner
  */
-public class HSSFCellStyleProducer implements CellStyleProducer {
+public class HSSFCellStyleProducer implements CellStyleProducerWithRotation {
   private static final Log logger = LogFactory.getLog( HSSFCellStyleProducer.class );
 
   private static class HSSFCellStyleKey {
@@ -129,6 +130,11 @@ public class HSSFCellStyleProducer implements CellStyleProducer {
     private short dataStyle;
 
     /**
+     * the rotation angle.
+     */
+    private short rotation;
+
+    /**
      * Indention level
      */
     private short indention;
@@ -136,14 +142,13 @@ public class HSSFCellStyleProducer implements CellStyleProducer {
     private Integer hashCode;
 
     /**
-     * @param background
-     *          can be null
-     * @param contentStyle
-     *          can be null
+     * @param background   can be null
+     * @param contentStyle can be null
      */
     protected HSSFCellStyleKey( final CellBackground background, final StyleSheet contentStyle,
-        final DataFormat dataFormat, final ExcelFontFactory fontFactory, final ExcelColorProducer colorProducer,
-        final ExcelColorProducer fontColorProducer ) {
+                                final DataFormat dataFormat, final ExcelFontFactory fontFactory,
+                                final ExcelColorProducer colorProducer,
+                                final ExcelColorProducer fontColorProducer ) {
       if ( dataFormat == null ) {
         throw new NullPointerException();
       }
@@ -164,6 +169,7 @@ public class HSSFCellStyleProducer implements CellStyleProducer {
           this.xColor = background.getBackgroundColor();
         }
         final BorderEdge bottom = background.getBottom();
+        background.getAttributes();
         this.colorBottom = colorProducer.getNearestColor( bottom.getColor() );
         this.xColorBottom = bottom.getColor();
         this.borderStrokeBottom = HSSFCellStyleProducer.translateStroke( bottom.getBorderStyle(), bottom.getWidth() );
@@ -187,15 +193,15 @@ public class HSSFCellStyleProducer implements CellStyleProducer {
       if ( contentStyle != null ) {
         final Color textColor = (Color) contentStyle.getStyleProperty( ElementStyleKeys.PAINT );
         final HSSFFontWrapper wrapper =
-            new HSSFFontWrapper( contentStyle, fontColorProducer.getNearestColor( textColor ) );
+          new HSSFFontWrapper( contentStyle, fontColorProducer.getNearestColor( textColor ) );
         final Font excelFont = fontFactory.getExcelFont( wrapper );
         this.font = excelFont.getIndex();
 
         final ElementAlignment horizontal =
-            (ElementAlignment) contentStyle.getStyleProperty( ElementStyleKeys.ALIGNMENT );
+          (ElementAlignment) contentStyle.getStyleProperty( ElementStyleKeys.ALIGNMENT );
         this.horizontalAlignment = HSSFCellStyleProducer.convertAlignment( horizontal );
         final ElementAlignment vertical =
-            (ElementAlignment) contentStyle.getStyleProperty( ElementStyleKeys.VALIGNMENT );
+          (ElementAlignment) contentStyle.getStyleProperty( ElementStyleKeys.VALIGNMENT );
         this.verticalAlignment = HSSFCellStyleProducer.convertAlignment( vertical );
         final String dataStyle = (String) contentStyle.getStyleProperty( ElementStyleKeys.EXCEL_DATA_FORMAT_STRING );
         if ( dataStyle != null ) {
@@ -204,6 +210,22 @@ public class HSSFCellStyleProducer implements CellStyleProducer {
         this.wrapText = isWrapText( contentStyle );
         this.indention = getIndention( contentStyle );
       }
+    }
+
+    protected HSSFCellStyleKey( final CellBackground background, final StyleSheet contentStyle,
+                                final DataFormat dataFormat, final ExcelFontFactory fontFactory,
+                                final ExcelColorProducer colorProducer,
+                                final ExcelColorProducer fontColorProducer, String rotationString ) {
+      this( background, contentStyle, dataFormat, fontFactory, colorProducer, fontColorProducer );
+
+      float rotationFloat = RotationUtils.NO_ROTATION ;
+      // read and parse, throws exception if angle out of range [-90,90]
+      if ( RotationUtils.isXlsType( fontFactory.getWorkbook() ) ) {
+        rotationFloat = RotationUtils.getRotationDegreesInXlsAcceptedRange( rotationString );
+      } else if ( RotationUtils.isXlsxType( fontFactory.getWorkbook() ) ) {
+        rotationFloat = RotationUtils.getRotationDegreesInXlsxAcceptedRange( rotationString );
+      }
+      this.rotation = new Integer( Math.round( rotationFloat ) ).shortValue();
     }
 
     private boolean isWrapText( final StyleSheet styleSheet ) {
@@ -242,6 +264,8 @@ public class HSSFCellStyleProducer implements CellStyleProducer {
       this.horizontalAlignment = style.getAlignment();
       this.verticalAlignment = style.getVerticalAlignment();
       this.wrapText = style.getWrapText();
+
+      this.rotation = style.getRotation();
     }
 
     private static Color createColor( final XSSFColor color ) {
@@ -249,7 +273,7 @@ public class HSSFCellStyleProducer implements CellStyleProducer {
         return null;
       }
       final byte[] rgb = color.getRgb();
-      return new Color( 0xFF & rgb[0], 0xFF & rgb[1], 0xFF & rgb[2] );
+      return new Color( 0xFF & rgb[ 0 ], 0xFF & rgb[ 1 ], 0xFF & rgb[ 2 ] );
     }
 
     protected HSSFCellStyleKey( final CellStyle style ) {
@@ -268,6 +292,8 @@ public class HSSFCellStyleProducer implements CellStyleProducer {
       this.horizontalAlignment = style.getAlignment();
       this.verticalAlignment = style.getVerticalAlignment();
       this.wrapText = style.getWrapText();
+
+      this.rotation = style.getRotation();
     }
 
     public boolean equals( final Object o ) {
@@ -322,6 +348,9 @@ public class HSSFCellStyleProducer implements CellStyleProducer {
       if ( wrapText != that.wrapText ) {
         return false;
       }
+      if ( rotation != that.rotation ) {
+        return false;
+      }
       if ( xColor == null ) {
         if ( that.xColor != null ) {
           return false;
@@ -331,7 +360,6 @@ public class HSSFCellStyleProducer implements CellStyleProducer {
           return false;
         }
       }
-
       if ( xColorRight == null ) {
         if ( that.xColorRight != null ) {
           return false;
@@ -370,6 +398,7 @@ public class HSSFCellStyleProducer implements CellStyleProducer {
       return true;
     }
 
+
     public int hashCode() {
       if ( hashCode == null ) {
         int result = (int) color;
@@ -396,6 +425,7 @@ public class HSSFCellStyleProducer implements CellStyleProducer {
       }
       return hashCode;
     }
+
 
     public short getColor() {
       return color;
@@ -476,8 +506,12 @@ public class HSSFCellStyleProducer implements CellStyleProducer {
     public short getIndention() {
       return indention;
     }
-  }
 
+    public short getRotation() {
+      return rotation;
+    }
+
+  }
   /**
    * the font factory is used to create excel fonts.
    */
@@ -552,11 +586,9 @@ public class HSSFCellStyleProducer implements CellStyleProducer {
    *          the optional background style for the table cell.
    * @return the generated or cached HSSFCellStyle.
    */
-  public CellStyle createCellStyle( final InstanceID id, final StyleSheet element, final CellBackground bg ) {
+  public CellStyle createCellStyle( final HSSFCellStyleKey styleKey, final InstanceID id, final StyleSheet element, final CellBackground bg ) {
     // check, whether that style is already created
-    final HSSFCellStyleKey styleKey =
-        new HSSFCellStyleKey( bg, element, dataFormat, fontFactory, colorProducer, fontColorProducer );
-    if ( styleCache.containsKey( styleKey ) ) {
+    if ( styleKey != null && styleCache.containsKey( styleKey ) ) {
       return styleCache.get( styleKey );
     }
 
@@ -582,9 +614,11 @@ public class HSSFCellStyleProducer implements CellStyleProducer {
       if ( styleKey.getDataStyle() >= 0 ) {
         hssfCellStyle.setDataFormat( styleKey.getDataStyle() );
       }
+      hssfCellStyle.setRotation( styleKey.getRotation() );
     }
     if ( bg != null ) {
       if ( hssfCellStyle instanceof XSSFCellStyle ) {
+
         final XSSFCellStyle xssfCellStyle = (XSSFCellStyle) hssfCellStyle;
         if ( BorderStyle.NONE.equals( bg.getBottom().getBorderStyle() ) == false ) {
           hssfCellStyle.setBorderBottom( styleKey.getBorderStrokeBottom() );
@@ -636,6 +670,19 @@ public class HSSFCellStyleProducer implements CellStyleProducer {
 
     styleCache.put( styleKey, hssfCellStyle );
     return hssfCellStyle;
+  }
+
+  public CellStyle createCellStyle( final InstanceID id, final StyleSheet element, final CellBackground bg ) {
+    HSSFCellStyleKey styleKey =
+      new HSSFCellStyleKey( bg, element, dataFormat, fontFactory, colorProducer, fontColorProducer );
+    return createCellStyle( styleKey, id, element, bg );
+  }
+
+  public CellStyle createCellStyle( final InstanceID id, final StyleSheet element, final CellBackground bg,
+                                    String rotationString ) {
+    HSSFCellStyleKey styleKey =
+      new HSSFCellStyleKey( bg, element, dataFormat, fontFactory, colorProducer, fontColorProducer, rotationString );
+    return createCellStyle( styleKey, id, element, bg );
   }
 
   private XSSFColor createXSSFColor( final Color clr ) {

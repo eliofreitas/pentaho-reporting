@@ -12,7 +12,7 @@
  *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *  See the GNU Lesser General Public License for more details.
  *
- *  Copyright (c) 2006 - 2013 Pentaho Corporation..  All rights reserved.
+ *  Copyright (c) 2006 - 2016 Pentaho Corporation..  All rights reserved.
  */
 
 package org.pentaho.reporting.engine.classic.core.modules.output.fast.xls;
@@ -20,21 +20,28 @@ package org.pentaho.reporting.engine.classic.core.modules.output.fast.xls;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.pentaho.reporting.engine.classic.core.modules.output.table.base.CellBackground;
 import org.pentaho.reporting.engine.classic.core.modules.output.table.xls.helper.CellStyleProducer;
+import org.pentaho.reporting.engine.classic.core.modules.output.table.xls.helper.CellStyleProducerWithRotation;
 import org.pentaho.reporting.engine.classic.core.modules.output.table.xls.helper.ExcelFontFactory;
 import org.pentaho.reporting.engine.classic.core.style.StyleSheet;
 import org.pentaho.reporting.engine.classic.core.util.InstanceID;
 import org.pentaho.reporting.libraries.base.util.LFUMap;
 
-public class FastExcelCellStyleProducer implements CellStyleProducer {
+public class FastExcelCellStyleProducer implements CellStyleProducerWithRotation {
   private static class CacheKey {
     private final InstanceID id;
     private final CellBackground background;
     private final InstanceID styleSheetId;
+    private String rotation; //should this be final?
 
     private CacheKey( final InstanceID id, final CellBackground background, final InstanceID styleSheetId ) {
       this.id = id;
       this.background = background;
       this.styleSheetId = styleSheetId;
+    }
+
+    private CacheKey( final InstanceID id, final CellBackground background, final InstanceID styleSheetId, String rotation ) {
+      this( id, background, styleSheetId );
+      this.rotation = rotation;
     }
 
     public boolean equals( final Object o ) {
@@ -56,6 +63,9 @@ public class FastExcelCellStyleProducer implements CellStyleProducer {
       if ( styleSheetId != null ? !styleSheetId.equals( cacheKey.styleSheetId ) : cacheKey.styleSheetId != null ) {
         return false;
       }
+      if ( rotation != null ? !rotation.equals( cacheKey.rotation ) : cacheKey.rotation != null ) {
+        return false;
+      }
 
       return true;
     }
@@ -64,6 +74,7 @@ public class FastExcelCellStyleProducer implements CellStyleProducer {
       int result = id != null ? id.hashCode() : 0;
       result = 31 * result + ( background != null ? background.hashCode() : 0 );
       result = 31 * result + ( styleSheetId != null ? styleSheetId.hashCode() : 0 );
+      result = 31 * result + ( rotation != null ? rotation.hashCode() : 0 );
       return result;
     }
   }
@@ -95,6 +106,45 @@ public class FastExcelCellStyleProducer implements CellStyleProducer {
     }
 
     CellStyle cellStyle = backend.createCellStyle( id, element, bg );
+    if ( cellStyle == null ) {
+      return null;
+    }
+    if ( id == null ) {
+      backgroundCache.put( bg, cellStyle );
+    } else {
+      contentCache.put( new CacheKey( id, bg, element.getId() ), cellStyle );
+    }
+    return cellStyle;
+  }
+
+  public CellStyle createCellStyle( final InstanceID id, final StyleSheet element, final CellBackground bg, String rotation ) {
+    if ( id == null ) {
+      CellStyle cellStyle = backgroundCache.get( bg );
+      if ( cellStyle != null ) {
+        return cellStyle;
+      }
+    } else {
+
+      CellStyle cellStyle = null;
+
+      if( backend instanceof CellStyleProducerWithRotation ) {
+        cellStyle = contentCache.get( new CacheKey( id, bg, element.getId(), rotation ) );
+      } else {
+        cellStyle = contentCache.get( new CacheKey( id, bg, element.getId() ) );
+      }
+      if ( cellStyle != null ) {
+        return cellStyle;
+      }
+    }
+
+    CellStyle cellStyle = null;
+
+    if( backend instanceof CellStyleProducerWithRotation ) {
+      cellStyle = ( (CellStyleProducerWithRotation) backend ).createCellStyle( id, element, bg, rotation );
+    } else {
+      cellStyle = backend.createCellStyle( id, element, bg );
+    }
+
     if ( cellStyle == null ) {
       return null;
     }

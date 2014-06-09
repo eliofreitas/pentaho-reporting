@@ -12,7 +12,7 @@
  * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
  *
- * Copyright (c) 2001 - 2013 Object Refinery Ltd, Pentaho Corporation and Contributors..  All rights reserved.
+ * Copyright (c) 2001 - 2016 Object Refinery Ltd, Pentaho Corporation and Contributors..  All rights reserved.
  */
 
 package org.pentaho.reporting.engine.classic.core.modules.output.table.base;
@@ -38,6 +38,7 @@ import org.pentaho.reporting.engine.classic.core.layout.output.OutputProcessorMe
 import org.pentaho.reporting.engine.classic.core.layout.process.IterateStructuralProcessStep;
 import org.pentaho.reporting.engine.classic.core.layout.process.RevalidateTextEllipseProcessStep;
 import org.pentaho.reporting.engine.classic.core.layout.text.GlyphList;
+import org.pentaho.reporting.engine.classic.core.util.RotationUtils;
 import org.pentaho.reporting.engine.classic.core.util.geom.StrictBounds;
 import org.pentaho.reporting.libraries.fonts.encoding.CodePointBuffer;
 
@@ -185,15 +186,34 @@ public class DefaultTextExtractor extends IterateStructuralProcessStep {
       }
 
       final long ellipseSize = extractEllipseSize( textNode );
-      final long x1 = textNode.getX();
-      final long x2 = x1 + textNode.getWidth();
-      final long effectiveAreaX2 = ( contentAreaX2 - ellipseSize );
-      if ( x2 <= effectiveAreaX2 ) {
+
+      final long minCoord, maxCoord, effectiveArea, contentArea;
+      if ( RotationUtils.isVerticalOrientation( textNode.getParent().getParent() ) ) {
+        // applied rotation aligns the text with the Y axis [-270,-90,90,270]
+        minCoord = textNode.getY();
+          /* TODO assuming rotation 90 == -90, Top vs bottom border+padding */
+          /* simulate contentAreaY2 */
+        contentArea = textNode.getParent().getParent().getY()
+          + textNode.getParent().getParent().getOverflowAreaHeight()
+          - textNode.getParent().getParent().getBoxDefinition().getPaddingBottom()
+          - textNode.getParent().getParent().getStaticBoxLayoutProperties().getBorderBottom();
+      } else {
+        // TODO diagonal rotations (ex: 45 degrees)
+        minCoord = textNode.getX();
+        contentArea = contentAreaX2;
+      }
+      effectiveArea = contentArea - ellipseSize;
+      maxCoord = minCoord + textNode.getWidth();
+
+      if ( maxCoord <= effectiveArea ) {
         // the text will be fully visible.
-        drawText( textNode, x2 );
-      } else if ( x1 < contentAreaX2 ) {
+        drawText( textNode, maxCoord );
+      } else if ( minCoord >= contentArea ) {
+        // Skip, the node will not be visible.
+        return;
+      } else if ( minCoord < contentAreaX2 ) {
         // The text node that is printed will overlap with the ellipse we need to print.
-        drawText( textNode, effectiveAreaX2 );
+        drawText( textNode, effectiveArea );
         final RenderBox parent = textNode.getParent();
         if ( parent != null ) {
           final RenderBox textEllipseBox = parent.getTextEllipseBox();
@@ -415,9 +435,27 @@ public class DefaultTextExtractor extends IterateStructuralProcessStep {
     }
     ellipseDrawn = false;
 
-    final boolean overflowProperty = lineBox.getParent().getStaticBoxLayoutProperties().isOverflowX();
+    /* Account for rotations in text overflow calculation */
+    // check if a rotation is applied, and is not one that still keeps the text aligned with the X axis [0, -180,180]
+    if ( RotationUtils.isVerticalOrientation( lineBox.getParent() ) ) {
+      // applied rotation aligns the text with the Y axis [-270,-90,90,270]
+      final long contentAreaY2 = lineBox.getY() + lineBox.getParent().getOverflowAreaHeight()
+          - lineBox.getParent().getBoxDefinition().getPaddingBottom()
+          - lineBox.getParent().getStaticBoxLayoutProperties().getBorderBottom();
+      // assuming lineBox is horizontal (not yet rotated)
+      // assuming lineBox.getY() [Y +border +padding ]
+      // assuming lineBox.getParent().getOverflowAreaHeight() [height +borders +paddings ]
+      textLineOverflow =
+          ( lineBox.getY() + lineBox.getWidth() > contentAreaY2 )
+            &&
+          !lineBox.getParent().getStaticBoxLayoutProperties().isOverflowY();
 
-    this.textLineOverflow = ( ( lineBox.getX() + lineBox.getWidth() ) > contentAreaX2 ) && overflowProperty == false;
+    } else { // TODO diagonal rotations (ex: 45 degrees)
+      textLineOverflow =
+          ( ( lineBox.getX() + lineBox.getWidth() ) > contentAreaX2 )
+            &&
+          !lineBox.getParent().getStaticBoxLayoutProperties().isOverflowX();
+    }
 
     if ( textLineOverflow ) {
       revalidateTextEllipseProcessStep.compute( lineBox, contentAreaX1, contentAreaX2 );

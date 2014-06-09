@@ -12,7 +12,7 @@
  * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
  *
- * Copyright (c) 2001 - 2013 Object Refinery Ltd, Pentaho Corporation and Contributors..  All rights reserved.
+ * Copyright (c) 2001 - 2016 Object Refinery Ltd, Pentaho Corporation and Contributors..  All rights reserved.
  */
 
 package org.pentaho.reporting.engine.classic.core;
@@ -171,6 +171,8 @@ public class AttributeNames {
     public static final String MESSAGE_NULL_VALUE = "message-null-value";
     public static final String VALUE = "value";
     public static final String FIELD = "field";
+    
+    public static final String ROTATION = "rotation";
 
     public static final String FORMAT_STRING = "format-string";
     public static final String NAME = "name";

@@ -12,7 +12,7 @@
  * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
  *
- * Copyright (c) 2001 - 2013 Object Refinery Ltd, Pentaho Corporation and Contributors..  All rights reserved.
+ * Copyright (c) 2001 - 2016 Object Refinery Ltd, Pentaho Corporation and Contributors..  All rights reserved.
  */
 
 package org.pentaho.reporting.engine.classic.core.modules.output.pageable.pdf.internal;
@@ -55,6 +55,7 @@ import org.pentaho.reporting.engine.classic.core.style.StyleSheet;
 import org.pentaho.reporting.engine.classic.core.style.TextDirection;
 import org.pentaho.reporting.engine.classic.core.style.TextStyleKeys;
 import org.pentaho.reporting.engine.classic.core.util.TypedMapWrapper;
+import org.pentaho.reporting.engine.classic.core.util.RotationUtils;
 import org.pentaho.reporting.engine.classic.core.util.geom.StrictGeomUtility;
 import org.pentaho.reporting.libraries.base.util.LFUMap;
 import org.pentaho.reporting.libraries.base.util.StringUtils;
@@ -320,6 +321,19 @@ public class PdfLogicalPageDrawable extends LogicalPageDrawable {
     final long posY = renderableText.getY();
     final float x1 = (float) ( StrictGeomUtility.toExternalValue( posX ) );
 
+    final boolean hasRotation = false; /* RotationUtils.hasRotation( renderableText.getParent() )
+        || ( renderableText.getParent() != null && RotationUtils.hasRotation( renderableText.getParent().getParent() ) );*/
+    float[ ] rotationMatrix = null;
+
+
+    if ( hasRotation ) {
+      if ( RotationUtils.NO_ROTATION != RotationUtils.getRotation( renderableText.getParent() ) ) {
+        rotationMatrix = RotationUtils.getRotationMatrix( RotationUtils.getRotation( renderableText.getParent() ) );
+      } else if ( RotationUtils.NO_ROTATION != RotationUtils.getRotation( renderableText.getParent().getParent() ) ) {
+        rotationMatrix = RotationUtils.getRotationMatrix( RotationUtils.getRotation( renderableText.getParent().getParent() ) );
+      }
+    }
+
     final PdfContentByte cb;
     PdfTextSpec textSpec = (PdfTextSpec) getTextSpec();
     if ( textSpec == null ) {
@@ -387,15 +401,36 @@ public class PdfLogicalPageDrawable extends LogicalPageDrawable {
 
     // if the font does not declare to be italics already, emulate it ..
     if ( baseFontRecord.isTrueTypeFont() && textSpec.isItalics() && nativeContext.isNativeItalics() == false ) {
-      final float italicAngle = baseFont.getFontDescriptor( BaseFont.ITALICANGLE, textSpec.getFontSize() );
+      final float italicAngle =
+        baseFont.getFontDescriptor( BaseFont.ITALICANGLE, textSpec.getFontSize() );
       if ( italicAngle == 0 ) {
-        // italics requested, but the font itself does not supply italics gylphs.
-        cb.setTextMatrix( 1, 0, PdfLogicalPageDrawable.ITALIC_ANGLE, 1, x1 + translateX, y );
+        if ( hasRotation ) {
+          float rX = x1 + translateX; //original
+          float rY = y; //original
+          cb.setTextMatrix( rotationMatrix[ 0 ], rotationMatrix[ 1 ], rotationMatrix[ 2 ], rotationMatrix[ 3 ], rX,
+            rY );
+        } else {
+          // italics requested, but the font itself does not supply italics glyphs.
+          cb.setTextMatrix( 1, 0, PdfLogicalPageDrawable.ITALIC_ANGLE, 1, x1 + translateX, y );
+        }
+      } else {
+        if ( hasRotation ) {
+          float rX = x1 + translateX; //original
+          float rY = y; //original
+          cb.setTextMatrix( rotationMatrix[ 0 ], rotationMatrix[ 1 ], rotationMatrix[ 2 ], rotationMatrix[ 3 ], rX,
+            rY );
+        } else {
+          cb.setTextMatrix( x1 + translateX, y );
+        }
+      }
+    } else {
+      if ( hasRotation ) {
+        float rX = x1 + translateX; //original
+        float rY = y; //original
+        cb.setTextMatrix( rotationMatrix[ 0 ], rotationMatrix[ 1 ], rotationMatrix[ 2 ], rotationMatrix[ 3 ], rX, rY );
       } else {
         cb.setTextMatrix( x1 + translateX, y );
       }
-    } else {
-      cb.setTextMatrix( x1 + translateX, y );
     }
 
     final OutputProcessorMetaData metaData = getMetaData();

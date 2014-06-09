@@ -12,7 +12,7 @@
  * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
  *
- * Copyright (c) 2001 - 2013 Object Refinery Ltd, Pentaho Corporation and Contributors..  All rights reserved.
+ * Copyright (c) 2001 - 2016 Object Refinery Ltd, Pentaho Corporation and Contributors..  All rights reserved.
  */
 
 package org.pentaho.reporting.engine.classic.core.layout.model;
@@ -26,6 +26,7 @@ import org.pentaho.reporting.engine.classic.core.metadata.ElementType;
 import org.pentaho.reporting.engine.classic.core.style.StyleSheet;
 import org.pentaho.reporting.engine.classic.core.style.TextStyleKeys;
 import org.pentaho.reporting.engine.classic.core.util.InstanceID;
+import org.pentaho.reporting.engine.classic.core.util.RotationUtils;
 import org.pentaho.reporting.engine.classic.core.util.geom.StrictGeomUtility;
 import org.pentaho.reporting.libraries.fonts.encoding.CodePointBuffer;
 import org.pentaho.reporting.libraries.fonts.text.Spacing;
@@ -227,15 +228,34 @@ public final class RenderableText extends RenderNode implements SplittableRender
     return fontMetricsValue * conversionFactor;
   }
 
-  public int computeMaximumTextSize( final long contentX2 ) {
+  public int computeMaximumTextSize( final long contentArea ) {
     final int length = getLength();
-    final long x = getX();
-    if ( contentX2 >= ( x + getWidth() ) ) {
+    final long minCoord, maxCoord;
+    final RenderBox topParent = this.getParent().getParent();
+
+    if ( RotationUtils.isVerticalOrientation( topParent ) ) {
+      minCoord = topParent.getY()
+        + topParent.getBoxDefinition().getPaddingTop()
+        + topParent.getStaticBoxLayoutProperties().getBorderTop();
+      if ( this.getParent().getTextEllipseBox() != null ) {
+        // has ellipse
+        maxCoord = minCoord + getWidth();
+      } else {
+        // write it all, TODO overflow restrictions
+        maxCoord = -1;
+      }
+    } else {
+      // TODO diagonal
+      minCoord = getX();
+      maxCoord = minCoord + getWidth();
+    }
+
+    if ( contentArea >= maxCoord ) {
       return length;
     }
 
     final GlyphList gs = getGlyphs();
-    long runningPos = x;
+    long runningPos = minCoord;
     final int offset = getOffset();
     final int maxPos = offset + length;
 
@@ -245,7 +265,7 @@ public final class RenderableText extends RenderNode implements SplittableRender
       if ( i != offset ) {
         runningPos += g.getSpacing().getMinimum();
       }
-      if ( runningPos > contentX2 ) {
+      if ( runningPos > contentArea ) {
         return Math.max( 0, i - offset );
       }
     }

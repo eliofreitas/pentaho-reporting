@@ -12,7 +12,7 @@
  * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
  *
- * Copyright (c) 2001 - 2013 Object Refinery Ltd, Pentaho Corporation and Contributors..  All rights reserved.
+ * Copyright (c) 2001 - 2016 Object Refinery Ltd, Pentaho Corporation and Contributors..  All rights reserved.
  */
 
 package org.pentaho.reporting.engine.classic.core.modules.output.table.xls.helper;
@@ -52,6 +52,8 @@ import org.pentaho.reporting.engine.classic.core.modules.output.table.base.Table
 import org.pentaho.reporting.engine.classic.core.modules.output.table.base.TableRectangle;
 import org.pentaho.reporting.engine.classic.core.style.ElementStyleKeys;
 import org.pentaho.reporting.engine.classic.core.style.StyleSheet;
+import org.pentaho.reporting.engine.classic.core.util.ReportDrawableRotatedComponent;
+import org.pentaho.reporting.engine.classic.core.util.RotationUtils;
 import org.pentaho.reporting.engine.classic.core.util.geom.StrictBounds;
 import org.pentaho.reporting.engine.classic.core.util.geom.StrictGeomUtility;
 import org.pentaho.reporting.libraries.resourceloader.ResourceManager;
@@ -187,7 +189,7 @@ public class ExcelPrinter extends ExcelPrinterBase {
         }
 
         if ( applyCellValue( content, cell, sheetLayout, rectangle, contentOffset ) ) {
-          mergeCellRegion( rectangle, row, col, sheetLayout, logicalPage, content, contentProducer );
+          mergeCellRegion( rectangle, row, col, sheetLayout, logicalPage, content, contentProducer, cell.getCellStyle().getRotation() );
         }
 
         content.setFinishedTable( true );
@@ -203,7 +205,7 @@ public class ExcelPrinter extends ExcelPrinterBase {
 
   private void mergeCellRegion( final TableRectangle rectangle, final int row, final int col,
       final SheetLayout sheetLayout, final LogicalPageBox logicalPage, final RenderBox content,
-      final TableContentProducer contentProducer ) {
+      final TableContentProducer contentProducer, final short rotation ) {
     if ( content == null ) {
       throw new NullPointerException();
     }
@@ -228,6 +230,7 @@ public class ExcelPrinter extends ExcelPrinterBase {
         final CellStyle spannedStyle =
             getCellStyleProducer().createCellStyle( content.getInstanceId(), content.getStyleSheet(), bg );
         if ( spannedStyle != null ) {
+          spannedStyle.setRotation( rotation );
           regionCell.setCellStyle( spannedStyle );
         }
       }
@@ -281,6 +284,9 @@ public class ExcelPrinter extends ExcelPrinterBase {
           .warn( "Excel-Cells cannot contain formulas longer than 1023 characters. Converting excel formula into plain text" );
     }
 
+    if ( RotationUtils.hasRotation( content ) ) {
+      ReportDrawableRotatedComponent.drawExcel( cell, new Float( RotationUtils.getRotation( content ) ).intValue() );
+    }
     if ( value instanceof RichTextString ) {
       cell.setCellValue( (RichTextString) value );
     } else if ( value instanceof Date ) {

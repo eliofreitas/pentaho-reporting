@@ -12,7 +12,7 @@
  * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
  *
- * Copyright (c) 2001 - 2013 Object Refinery Ltd, Pentaho Corporation and Contributors..  All rights reserved.
+ * Copyright (c) 2001 - 2016 Object Refinery Ltd, Pentaho Corporation and Contributors..  All rights reserved.
  */
 
 package org.pentaho.reporting.engine.classic.core.modules.output.table.html;
@@ -45,6 +45,9 @@ import org.pentaho.reporting.engine.classic.core.modules.output.table.html.helpe
 import org.pentaho.reporting.engine.classic.core.style.ElementStyleKeys;
 import org.pentaho.reporting.engine.classic.core.style.StyleSheet;
 import org.pentaho.reporting.engine.classic.core.util.InstanceID;
+import org.pentaho.reporting.engine.classic.core.util.IReportDrawableRotated;
+import org.pentaho.reporting.engine.classic.core.util.ReportDrawableRotatedComponent;
+import org.pentaho.reporting.engine.classic.core.util.RotationUtils;
 import org.pentaho.reporting.libraries.repository.ContentIOException;
 import org.pentaho.reporting.libraries.xmlns.common.AttributeList;
 import org.pentaho.reporting.libraries.xmlns.writer.CharacterEntityParser;
@@ -97,8 +100,19 @@ public class HtmlTextExtractor extends DefaultTextExtractor {
 
     try {
       final int nodeType = content.getNodeType();
+
       if ( nodeType == LayoutNodeTypes.TYPE_BOX_PARAGRAPH ) {
-        processInitialBox( (ParagraphRenderBox) content );
+        if ( RotationUtils.hasRotation( content ) ) {
+          /* we need a distinct object for each component */
+          IReportDrawableRotated rotate =
+            new ReportDrawableRotatedComponent( RotationUtils.getRotation( content ), content );
+
+          rotate.startDrawHtml( xmlWriter );
+          processInitialBox( (ParagraphRenderBox) content );
+          rotate.finishDrawHtml( xmlWriter );
+        } else {
+          processInitialBox( (ParagraphRenderBox) content );
+        }
       } else if ( nodeType == LayoutNodeTypes.TYPE_BOX_CONTENT ) {
         processRenderableContent( (RenderableReplacedContentBox) content );
       } else {
